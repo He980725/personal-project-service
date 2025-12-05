@@ -1,6 +1,7 @@
 package com.HeZhizhu.PersonalServer.controller;
 
 import com.HeZhizhu.PersonalServer.dto.userAccountDTO.LoginRequest;
+import com.HeZhizhu.PersonalServer.dto.userAccountDTO.LoginResponse;
 import com.HeZhizhu.PersonalServer.dto.userAccountDTO.RegisterRequest;
 import com.HeZhizhu.PersonalServer.entity.UserAccount;
 import com.HeZhizhu.PersonalServer.service.UserAccountService;
@@ -44,8 +45,8 @@ public class AuthController {
      * 用户登录 - Token 自动存储到 Cookie
      */
     @PostMapping("/login")
-    @Operation(summary = "用户登录", description = "使用用户名和密码登录，Token自动存储到Cookie")
-    public ApiResponse<String> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+    @Operation(summary = "用户登录", description = "使用用户名和密码登录，返回用户信息和Token")
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -59,7 +60,18 @@ public class AuthController {
         // 将 Token 存储到 Cookie
         addTokenCookie(response, jwt);
 
-        return ApiResponse.success("登录成功", jwt);
+        // 获取用户信息
+        UserAccount user = userAccountService.findByUsername(loginRequest.getUsername());
+        
+        // 构建登录响应
+        LoginResponse loginResponse = LoginResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .token(jwt)
+                .build();
+
+        return ApiResponse.success("登录成功", loginResponse);
     }
 
     /**
@@ -67,7 +79,7 @@ public class AuthController {
      */
     private void addTokenCookie(HttpServletResponse response, String token) {
         Cookie cookie = new Cookie(cookieName, token);
-        cookie.setHttpOnly(true);      // 防止 JavaScript 访问，提高安全性
+        cookie.setHttpOnly(false);     // 允许 JavaScript 访问（如需更高安全性可设为 true）
         cookie.setSecure(false);       // 生产环境设为 true（仅 HTTPS）
         cookie.setPath("/");           // Cookie 作用路径
         cookie.setMaxAge(jwtExpiration.intValue()); // 过期时间（秒）
