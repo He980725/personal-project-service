@@ -52,9 +52,14 @@ public class UserAccountService {
     }
 
     /**
-     * 保存用户
+     * 保存用户（如果密码未加密则加密）
      */
     public UserAccount save(UserAccount userAccount) {
+        // 检查密码是否已加密（BCrypt 加密的密码以 $2a$ 或 $2b$ 开头）
+        String password = userAccount.getPassword();
+        if (password != null && !password.startsWith("$2a$") && !password.startsWith("$2b$")) {
+            userAccount.setPassword(passwordEncoder.encode(password));
+        }
         return userAccountRepository.save(userAccount);
     }
 

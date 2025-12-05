@@ -1,38 +1,62 @@
 package com.HeZhizhu.PersonalServer.config;
 
+import com.HeZhizhu.PersonalServer.filter.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity // 开启 Spring Security 配置（Spring Boot 4.x 需显式添加）
+@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    // 注入 BCrypt 加密工具，全局可通过 @Autowired 使用
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    // 注入 BCrypt 加密工具
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // BCrypt 自动加密，无需额外配置
         return new BCryptPasswordEncoder();
     }
-    // 核心：配置接口访问规则（放行所有/指定接口）
+
+    // 配置 AuthenticationManager
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    // 配置接口访问规则
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 关闭 CSRF 防护（开发环境无需开启，否则 Post/Put 请求可能被拦截）
+                // 关闭 CSRF 防护
                 .csrf(csrf -> csrf.disable())
+                // 配置会话管理为无状态
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 配置异常处理
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 // 配置接口授权规则
                 .authorizeHttpRequests(auth -> auth
-                                // 方案 1：放行所有接口（开发环境最方便，推荐）
-                                .anyRequest().permitAll() // 所有请求都允许匿名访问，无需认证
-
-                        // 方案 2：只放行指定接口（更严谨，按需选择）
-                        // .requestMatchers("/user/createNewUserAccount", "/user/list").permitAll() // 放行创建用户、查询用户接口
-                        // .anyRequest().authenticated() // 其他接口需要认证
-                );
+                        // 放行认证相关接口（登录、注册、重置密码等）
+                        .requestMatchers("/auth/**").permitAll()
+                        // 放行 Swagger 文档接口
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // 其他所有接口需要认证
+                        .anyRequest().authenticated()
+                )
+                // 添加 JWT 认证过滤器
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
