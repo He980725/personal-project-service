@@ -87,7 +87,7 @@ public class SysRouteController {
     /**
      * 更新路由
      */
-    @PutMapping("/{id}")
+    @PostMapping("/update/{id}")
     @Operation(summary = "更新路由", description = "根据ID更新路由信息")
     public ApiResponse<RouteResponse> updateRoute(@PathVariable Long id, @Valid @RequestBody RouteRequest request) {
         // 检查路由名称是否已存在（排除当前ID）
@@ -106,7 +106,7 @@ public class SysRouteController {
     /**
      * 删除路由
      */
-    @DeleteMapping("/{id}")
+    @PostMapping("/delete/{id}")
     @Operation(summary = "删除路由", description = "根据ID删除路由（如有子路由需先删除子路由）")
     public ApiResponse<String> deleteRoute(@PathVariable Long id) {
         if (sysRouteService.findById(id).isEmpty()) {

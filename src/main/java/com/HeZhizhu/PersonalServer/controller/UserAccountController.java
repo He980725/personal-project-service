@@ -52,7 +52,7 @@ public class UserAccountController {
         Pageable pageable = PageRequest.of(page, size);
         Page<UserAccount> userPage = userAccountService.findAll(pageable);
         Page<UserResponse> responsePage = userPage.map(userAccountService::convertToResponse);
-        return ApiResponse.success(responsePage);
+        return ApiResponse.<Page<UserResponse>>success(responsePage);
     }
 
     /**
@@ -94,8 +94,8 @@ public class UserAccountController {
     /**
      * 更新用户信息（使用统一响应格式）
      */
-    @PutMapping("/{id}")
-    @Operation(summary = "修改极客时间信息", description = "传入用户ID和修改后的信息，更新用户数据")
+    @PostMapping("/update/{id}")
+    @Operation(summary = "修改用户信息", description = "传入用户ID和修改后的信息，更新用户数据")
     public ApiResponse<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest) {
         try {
             UserAccount userAccountDetails = userAccountService.convertToEntity(userRequest);
@@ -110,7 +110,7 @@ public class UserAccountController {
     /**
      * 删除用户（使用统一响应格式）
      */
-    @DeleteMapping("/{id}")
+    @PostMapping("/delete/{id}")
     @Operation(summary = "根据ID删除用户", description = "传入用户ID，删除对应用户（不可逆）")
     public ApiResponse<String> deleteUser(@PathVariable Long id) {
         if (userAccountService.findById(id).isPresent()) {
