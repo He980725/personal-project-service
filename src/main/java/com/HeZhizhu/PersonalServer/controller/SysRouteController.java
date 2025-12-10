@@ -1,5 +1,6 @@
 package com.HeZhizhu.PersonalServer.controller;
 
+import com.HeZhizhu.PersonalServer.dto.routeDTO.RouteQueryRequest;
 import com.HeZhizhu.PersonalServer.dto.routeDTO.RouteRequest;
 import com.HeZhizhu.PersonalServer.dto.routeDTO.RouteResponse;
 import com.HeZhizhu.PersonalServer.entity.SysRoute;
@@ -46,16 +47,33 @@ public class SysRouteController {
     }
 
     /**
-     * 获取所有路由列表（平铺）
+     * 获取所有路由列表（平铺，支持筛选）
      */
     @GetMapping("/list")
-    @Operation(summary = "获取路由列表", description = "获取所有路由，平铺列表结构")
-    public ApiResponse<List<RouteResponse>> getAllRoutes() {
-        List<SysRoute> routes = sysRouteService.findAll();
+    @Operation(summary = "获取路由列表", description = "获取所有路由，平铺列表结构，支持条件筛选")
+    public ApiResponse<List<RouteResponse>> getAllRoutes(RouteQueryRequest query) {
+        List<SysRoute> routes;
+        if (query == null || isQueryEmpty(query)) {
+            routes = sysRouteService.findAll();
+        } else {
+            routes = sysRouteService.findByCondition(query);
+        }
         List<RouteResponse> responseList = routes.stream()
                 .map(sysRouteService::convertToResponse)
                 .collect(Collectors.toList());
         return ApiResponse.success(responseList);
+    }
+
+    /**
+     * 判断查询条件是否为空
+     */
+    private boolean isQueryEmpty(RouteQueryRequest query) {
+        return query.getName() == null &&
+                query.getTitle() == null &&
+                query.getPath() == null &&
+                query.getStatus() == null &&
+                query.getRouteType() == null &&
+                query.getParentId() == null;
     }
 
     /**

@@ -2,6 +2,7 @@ package com.HeZhizhu.PersonalServer.repository;
 
 import com.HeZhizhu.PersonalServer.entity.SysRoute;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
  * 路由数据访问接口
  */
 @Repository
-public interface SysRouteRepository extends JpaRepository<SysRoute, Long> {
+public interface SysRouteRepository extends JpaRepository<SysRoute, Long>, JpaSpecificationExecutor<SysRoute> {
 
     /**
      * 根据父级ID查询子路由

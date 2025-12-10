@@ -1,11 +1,16 @@
 package com.HeZhizhu.PersonalServer.service;
 
+import com.HeZhizhu.PersonalServer.dto.routeDTO.RouteQueryRequest;
 import com.HeZhizhu.PersonalServer.dto.routeDTO.RouteRequest;
 import com.HeZhizhu.PersonalServer.dto.routeDTO.RouteResponse;
 import com.HeZhizhu.PersonalServer.entity.SysRoute;
 import com.HeZhizhu.PersonalServer.repository.SysRouteRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +31,49 @@ public class SysRouteService {
      */
     public List<SysRoute> findAll() {
         return sysRouteRepository.findAllByOrderBySortOrderAsc();
+    }
+
+    /**
+     * 条件查询路由（平铺列表）
+     */
+    public List<SysRoute> findByCondition(RouteQueryRequest query) {
+        Specification<SysRoute> spec = (root, criteriaQuery, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // 路由名称模糊查询
+            if (StringUtils.hasText(query.getName())) {
+                predicates.add(cb.like(root.get("name"), "%" + query.getName() + "%"));
+            }
+
+            // 菜单标题模糊查询
+            if (StringUtils.hasText(query.getTitle())) {
+                predicates.add(cb.like(root.get("title"), "%" + query.getTitle() + "%"));
+            }
+
+            // 路由路径模糊查询
+            if (StringUtils.hasText(query.getPath())) {
+                predicates.add(cb.like(root.get("path"), "%" + query.getPath() + "%"));
+            }
+
+            // 状态精确查询
+            if (query.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), query.getStatus()));
+            }
+
+            // 路由类型精确查询
+            if (query.getRouteType() != null) {
+                predicates.add(cb.equal(root.get("routeType"), query.getRouteType()));
+            }
+
+            // 父级ID精确查询
+            if (query.getParentId() != null) {
+                predicates.add(cb.equal(root.get("parentId"), query.getParentId()));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return sysRouteRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "sortOrder"));
     }
 
     /**
